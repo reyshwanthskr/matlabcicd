@@ -1,0 +1,3 @@
+# Allow members of the admin group to sudo without password
+Defaults env_keep += "http_proxy https_proxy no_proxy MW_PROXY_HOST MW_PROXY_PORT MLM_LICENSE_FILE VARIANTmatlab"
+matlab  ALL=(ALL:ALL) NOPASSWD:ALL

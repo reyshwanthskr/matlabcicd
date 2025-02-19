@@ -1,0 +1,153 @@
+# Copyright 2019 - 2022 The MathWorks, Inc.
+
+# To specify which MATLAB release to install in the container, edit the value of the MATLAB_VERSION argument.
+# Use lower case to specify the release, for example: ARG MATLAB_VERSION=r2021b
+
+# When you start the build stage, this Dockerfile by default uses the Ubuntu-based matlab-deps image.
+# To check the available matlab-deps images, see: https://hub.docker.com/r/mathworks/matlab-deps
+
+FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
+LABEL maintainer="The MathWorks"
+USER root
+ENV DEBIAN_FRONTEND="noninteractive" TZ="Etc/UTC"
+
+# Declare the global argument to use at the current build stage
+ARG MATLAB_VERSION=R2024b
+ARG HOME=/home/matlab
+
+# Install mpm dependencies
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && \
+    apt-get install --no-install-recommends --yes \
+        wget \
+        unzip \
+        ca-certificates && \
+    apt-get clean && apt-get autoremove
+
+# Run mpm to install MATLAB in the target location and delete the mpm installation afterwards.
+# If mpm fails to install successfully then output the logfile to the terminal, otherwise cleanup.
+RUN apt-get update -y && apt-get install -y locales locales-all
+
+COPY products_to_install.txt /tmp/
+RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm && \ 
+    chmod +x mpm && \
+    ./mpm install \
+        --release=${MATLAB_VERSION} \
+        --destination=/opt/matlab/${MATLAB_VERSION} \
+        --products $(cat "/tmp/products_to_install.txt") || \
+    (echo "MPM Installation Failure. See below for more information:" && cat /tmp/mathworks_root.log && false) && \
+    rm -f mpm /tmp/mathworks_root.log && \
+	rm /tmp/products_to_install.txt && \
+    ln -s /opt/matlab/${MATLAB_VERSION}/bin/matlab /usr/local/bin/matlab
+
+# Install python3, python3-pip, xvfb as the dependency for matlab-proxy
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install --yes \
+        apt-utils \
+        libglu1-mesa \
+        wget \
+        unzip \
+        libosmesa6 \
+        xterm \
+        tigervnc-standalone-server \
+        tigervnc-common \
+        xfce4 \
+        xscreensaver \
+        sudo \
+        curl \
+        python3 \
+        python3-pip \
+        xvfb \
+    # && apt-get remove -y \
+        tumbler \
+        pulseaudio \
+        gvfs \
+        gnome-screensaver \
+    && apt-get clean \
+    && apt-get -y autoremove \
+    && rm -rf /var/lib/apt/lists/*
+
+#Copy RR installer and license files 
+COPY RoadRunner_R2024b_Update_3_glnxa64.deb /tmp/RoadRunner.deb
+RUN dpkg -i /tmp/RoadRunner.deb
+RUN mkdir -p ${HOME}/.local/share/MathWorks/RoadRunner/R2024b/Licenses
+
+# Clone noVNC and websockify
+ARG NOVNC=/opt/noVNC
+
+# websockify seems to require a python with no version command so make it
+# Also add an index.html so that the user does NOT need to add the vnc.html. In
+# addition you might want to look at run.sh where we will add a redirect to incorporate
+# the default password unless it is changed on the command line to run the container.
+# This takes out 1 step in connecting to the container.
+RUN mkdir -p ${NOVNC}/utils/websockify && \
+    curl -sSfL 'https://github.com/novnc/noVNC/archive/v1.2.0.tar.gz' | tar -zxf - -C ${NOVNC} --strip=1 && \
+    curl -sSfL 'https://github.com/novnc/websockify/archive/v0.10.0.tar.gz' | tar -zxf - -C ${NOVNC}/utils/websockify --strip=1 && \
+    find ${NOVNC} -name ".git*" | xargs rm -rf && \
+    ln -s /usr/bin/python3 /usr/bin/python && \
+    ln -s $NOVNC/vnc.html $NOVNC/index.html
+
+ADD config/xstartup            ${HOME}/.vnc/
+ADD config/MATLAB.desktop      ${HOME}/Desktop/
+ADD config/xfce4/              ${HOME}/.config/xfce4/
+
+# Make sure that MATLAB is running Windows shortcuts (not linux!) - this is the preferred preference.
+ADD config/matlab.prf          ${HOME}/.matlab/${MATLAB_VERSION}/
+
+# By adding this configuration file we turn off the screensaver for the VNC session by default.
+ADD config/xscreensaver       ${HOME}/.xscreensaver
+
+RUN adduser --home ${HOME} --shell /bin/bash --disabled-password --gecos "" matlab
+RUN chmod +x     ${HOME}/.vnc/xstartup && \
+    chmod u+w    ${HOME}/Desktop/MATLAB.desktop && \
+    chmod u+w    ${HOME}/.matlab/${MATLAB_VERSION}/matlab.prf && \
+    chmod +x     ${HOME}/Desktop/MATLAB.desktop && \
+    touch        ${HOME}/.Xauthority && \
+    chown -R matlab:matlab ${HOME}
+
+ADD config/localsudo            /etc/sudoers.d/
+ADD run.sh                      /bin/run.sh
+ADD utils.sh                    /bin/utils.sh
+ADD readmes/welcome_readme      /etc/welcome_readme
+ADD readmes/help_readme         /etc/help_readme
+ADD readmes/vnc_readme          /etc/vnc_readme
+ADD readmes/browser_readme      /etc/browser_readme
+ADD startup.m                   ${HOME}/Documents/MATLAB/
+
+RUN chmod +x    /bin/run.sh
+
+ADD config/novnc_login_redirect.html ${NOVNC}/redirect.html
+
+ENV MWI_APP_PORT=8888
+ENV MWI_BASE_URL="/matlab"
+ENV MWI_APP_HOST="0.0.0.0"
+EXPOSE 5901 6080 ${MWI_APP_PORT}
+
+# Install Vulkan libraries
+# RUN wget -qO - http://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add -
+# RUN wget -qO /etc/apt/sources.list.d/lunarg-vulkan-focal.list http://packages.lunarg.com/vulkan/lunarg-vulkan-focal.list
+# RUN cat /etc/apt/sources.list.d/lunarg-vulkan-focal.list && exit 1
+# RUN apt-get update && apt-get install -y --no-install-recommends vulkan-sdk
+RUN wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+RUN wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.283-focal.list https://packages.lunarg.com/vulkan/1.3.283/lunarg-vulkan-1.3.283-focal.list
+RUN apt update && apt install -y --no-install-recommends vulkan-sdk
+
+# Install Vulkan drivers 
+RUN apt update && apt-get install --no-install-recommends -y software-properties-common
+RUN add-apt-repository ppa:graphics-drivers/ppa && \
+    dpkg --add-architecture i386 && \
+    apt update && apt install --no-install-recommends -y nvidia-driver-470 libvulkan1 libvulkan1:i386
+
+RUN apt update && apt-get --no-install-recommends --yes install terminator net-tools gedit
+
+RUN cd /bin/ && wget https://ssd.mathworks.com/supportfiles/ci/matlab-batch/v1/glnxa64/matlab-batch && chmod +x matlab-batch
+
+RUN mkdir -p /adc
+
+USER matlab
+ARG DEFAULT_VNC_PASSWORD=matlab
+
+# Set default VNC password to "matlab"
+RUN printf "${DEFAULT_VNC_PASSWORD}\n${DEFAULT_VNC_PASSWORD}\n\n" | vncpasswd
+
+WORKDIR /adc
+#ENTRYPOINT ["matlab-proxy-app"]
+ENTRYPOINT ["/bin/run.sh"]

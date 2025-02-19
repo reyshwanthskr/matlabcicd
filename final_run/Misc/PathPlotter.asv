@@ -1,0 +1,9 @@
+numPoints=length(out.Position);
+x1=zeros(numPoints);
+x2=zeros(numPoints);
+y1=zeros(numPoints);
+y2=zeros(numPoints);
+for i=1:numPoints
+    x1=out.Position(:,1)
+    
+end
