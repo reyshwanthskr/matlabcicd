@@ -11,8 +11,37 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: CarFromRightBehind
-      run: echo "Built and ran tests for Docker"
+      run: echo "sleep 75"
     - name: Test Results
-      run: echo "Stopping Distance Passed /nSpeed Test Passed /n Turning Left Passed /n Stopping Distance Passed/n Wait Time Passed/n Reaction Time Passed"
+      run: echo $MAT_RES
+    - name: Result Verification
+      run: if [ "$MATLAB_RESULT" == "1" ]; then echo "MATLAB_RESULT==1"; fi
+
+
+  
+    - uses: actions/checkout@v4
+    - name: Fail1
+      run: echo "sleep 75"
+    - name: Test Results
+      run: echo $MAT_RES
+    - name: Result Verification
+      run: if [ "$MATLAB_RESULT" == "1" ]; then echo "MATLAB_RESULT==1"; fi
+
+
+
+    - uses: actions/checkout@v4
+    - name: Fail1246
+      run: echo "sleep 75"
+    - name: Test Results
+      run: echo $MAT_RES
+    - name: Result Verification
+      run: if [ "$MATLAB_RESULT" == "1" ]; then echo "MATLAB_RESULT==1"; fi
+
+
+    - uses: actions/checkout@v4
+    - name: Fail4
+      run: echo "sleep 75"
+    - name: Test Results
+      run: echo $MAT_RES
     - name: Result Verification
       run: if [ "$MATLAB_RESULT" == "1" ]; then echo "MATLAB_RESULT==1"; fi
