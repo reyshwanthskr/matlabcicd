@@ -15,5 +15,5 @@ jobs:
     - name: Test Results
       run: echo "Stopping Distance Passed /nSpeed Test Passed /n Turning Left Passed /n Stopping Distance Passed/n Wait Time Passed/n Reaction Time Passed"
     - run: if [ "$MATLAB_RESULT" == "1" ]; then
-           echo "MATLAB_RESULT==1"
+             echo "MATLAB_RESULT==1"
            fi
