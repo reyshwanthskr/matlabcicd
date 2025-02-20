@@ -13,7 +13,7 @@ jobs:
     - name: CarFromRightBehind
       run: echo "Built and ran tests for Docker"
     - name: Test Results
-      run: echo "Stopping Distance Passed //Speed Test Passed //"Turning Left Passed //Stopping Distance Passed//Wait Time Passed//Reaction Time Passed"
+      run: echo "Stopping Distance Passed /nSpeed Test Passed /n Turning Left Passed /n Stopping Distance Passed/n Wait Time Passed/n Reaction Time Passed"
     - run: if [ "$MATLAB_RESULT" == "1" ]; then
            echo "MATLAB_RESULT==1"
            fi
