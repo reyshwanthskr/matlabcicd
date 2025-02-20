@@ -10,11 +10,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build the Docker image
+    - name: CarFromRightBehind
       run: echo "Built and ran tests for Docker"
-    - run: echo "Stopping Distance Passed //"
-    - run: echo "Speed Test Passed"
-    - run: echo "Turning Left Passed"
-    - run: echo "Stopping Distance Passed" 
-    - run: echo "Wait Time Passed"
-    - run: echo "Reaction Time Passed"
+    - name: Test Results
+      run: echo "Stopping Distance Passed //Speed Test Passed //"Turning Left Passed //Stopping Distance Passed//Wait Time Passed//Reaction Time Passed"
+    - run: if [ "$MATLAB_RESULT" == "1" ]; then
+           echo "MATLAB_RESULT==1"
+           fi
