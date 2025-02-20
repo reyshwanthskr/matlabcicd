@@ -11,7 +11,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: CarFromRightBehind
-      run: echo "sleep 75"
+      run: sleep 75
     - name: Test Results
       run: echo $MAT_RES
     - name: Result Verification
@@ -21,7 +21,7 @@ jobs:
   
     - uses: actions/checkout@v4
     - name: Fail1
-      run: echo "sleep 75"
+      run: sleep 69
     - name: Test Results
       run: echo $MAT_RES
     - name: Result Verification
@@ -31,7 +31,7 @@ jobs:
 
     - uses: actions/checkout@v4
     - name: Fail1246
-      run: echo "sleep 75"
+      run: sleep 33
     - name: Test Results
       run: echo $MAT_RES
     - name: Result Verification
@@ -40,7 +40,7 @@ jobs:
 
     - uses: actions/checkout@v4
     - name: Fail4
-      run: echo "sleep 75"
+      run: sleep 38
     - name: Test Results
       run: echo $MAT_RES
     - name: Result Verification
